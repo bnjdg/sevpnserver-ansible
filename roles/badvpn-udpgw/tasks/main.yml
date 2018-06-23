@@ -1,0 +1,44 @@
+---
+# task file for building badvpn-udpgw
+
+- name: install dependencies
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - libssl-dev
+    - libnspr*-dev
+    - libnss*-dev
+    - libevent-dev
+    - build-essential
+    - gcc
+    - cmake
+
+- name: clone badvpn repo
+  git:
+    repo: 'https://github.com/ambrop72/badvpn'
+    dest: /opt/badvpn
+
+- name: run cmake
+  shell: "cmake ./ -DBUILD_NOTHING_BY_DEFAULT=1 -DBUILD_UDPGW=1"
+  args:
+    chdir: /opt/badvpn
+
+- name: make
+  make:
+    chdir: /opt/badvpn
+
+- name: make install
+  make:
+    chdir: /opt/badvpn
+    target: install
+
+- name: add udpgw to supervisor
+  template:
+    src: udpgw.conf.j2
+    dest: /etc/supervisor/conf.d/udpgw.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: supervisor reload
+  command: supervisorctl reload

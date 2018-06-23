@@ -1,0 +1,127 @@
+---
+# tasks file for haproxy installation and setup
+
+- name: gather os specific variables
+  include: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_release}}.yml"
+    - "{{ ansible_distribution }}.yml"
+  tags: vars
+
+- name: add haproxy to rsyslog
+  template:
+    src: haproxy-rsyslog.conf.j2
+    dest: /etc/rsyslog.d/haproxy.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: restart rsyslog service
+  service:
+    name: rsyslog
+    state: restarted
+
+- name: create haproxy certs dir
+  file:
+    path: /etc/haproxy/certs
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+
+- name: ensure openssl package is installed
+  package:
+    name: openssl
+    state: present
+
+- name: install python packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - python-setuptools
+    - python-wheel
+
+- name: install pyopenssl via pip
+  pip:
+    name: pyopenssl
+    state: present
+
+- name: create csr directory
+  file:
+    path: /etc/ssl/csr
+    state: directory
+    owner: root
+    group: root
+    mode: 1755
+    recurse: yes
+
+- name: create crt directory
+  file:
+    path: /etc/ssl/crt
+    state: directory
+    owner: root
+    group: root
+    mode: 1755
+    recurse: yes
+
+- name: create private directory
+  file:
+    path: /etc/ssl/private
+    state: directory
+    owner: root
+    group: root
+    mode: 1755
+    recurse: yes
+
+- openssl_privatekey:
+    path: /etc/ssl/private/facebook.com.pem
+    state: present
+
+- name: generate spoofed fb cert csr
+  openssl_csr:
+    path: /etc/ssl/csr/facebook.com.csr
+    privatekey_path: /etc/ssl/private/facebook.com.pem
+    common_name: "*.facebook.com"
+    C: "US"
+    ST: "California"
+    L: "Menlo Park"
+    O: "Facebook, Inc."
+    subject_alt_name:
+      - "DNS:*.facebook.com"
+      - "DNS:ssh3.cmru.info"
+      - "DNS:*.xx.fbcdn.net"
+      - "DNS:*.fbsbx.com"
+      - "DNS:*.xz.fbcdn.net"
+      - "DNS:*.facebook.net"
+      - "DNS:*.xy.fbcdn.net"
+      - "DNS:*.messenger.com"
+      - "DNS:fb.com"
+      - "DNS:*fbcdn.net"
+      - "DNS:*.fb.com"
+      - "DNS:*.m.facebook.com"
+      - "DNS:*messenger.com"
+      - "DNS:facebook.com"
+
+- name: Generate a Self Signed OpenSSL certificate
+  openssl_certificate:
+    path: /etc/ssl/crt/facebook.com.crt
+    privatekey_path: /etc/ssl/private/facebook.com.pem
+    csr_path: /etc/ssl/csr/facebook.com.csr
+    provider: selfsigned
+
+- name: concatenate private and public key to /etc/haproxy/certs/haproxy.pem
+  shell: "cat /etc/ssl/crt/facebook.com.crt /etc/ssl/private/facebook.com.pem > /etc/haproxy/certs/haproxy.pem &> /dev/null & exit 0"
+
+- name: create haproxy.conf
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: restart haproxy service
+  service:
+    name: haproxy
+    state: restarted

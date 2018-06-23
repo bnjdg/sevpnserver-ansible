@@ -1,0 +1,106 @@
+---
+# tasks file for softethervpn
+
+# - name: Load Secrets
+#   include_vars: "secrets.yml"
+#
+# - name: Load Variables
+#   include_vars: "vars.yml"
+
+- name: Install list of packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - cmake
+    - gcc
+    - libncurses5-dev
+    - libreadline-dev
+    - libssl-dev
+    - make
+    - zlib1g-dev
+
+- name: clone softethervpn repo
+  git:
+    accept_hostkey: yes
+    repo: https://github.com/SoftEtherVPN/SoftEtherVPN
+    dest: /opt/softethervpn
+    update: yes
+    force: yes
+
+- name: configure SE-VPN
+  shell: "./configure"
+  args:
+    chdir: /opt/softethervpn
+
+- name: make
+  make:
+    chdir: /opt/softethervpn/tmp
+
+- name: make install
+  make:
+    chdir: /opt/softethervpn/tmp
+    target: install
+
+- name: copy vpnserver service
+  template:
+    src: vpnserver.service.j2
+    dest: /etc/systemd/system/vpnserver.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: reload the systemd daemon
+  shell: systemctl daemon-reload
+
+- name: enable the vpnserver service
+  service:
+    name: vpnserver
+    enabled: yes
+    state: started
+
+- name: copy wordlist
+  template:
+    src: wordlist.txt.j2
+    dest: /opt/softethervpn/wordlist.txt
+    owner: root
+    group: root
+    mode: 0644
+
+- name: copy configuration script
+  template:
+    src: vpncmd.sh.j2
+    dest: /opt/softethervpn/vpncmd.sh
+    backup: yes
+    owner: root
+    group: root
+    mode: 0755
+
+- name: run configuration script
+  shell: bash /opt/softethervpn/vpncmd.sh
+  register: vpn_config
+
+- name: restart vpnserver
+  service:
+    name: vpnserver
+    state: restarted
+
+- name: reboot before proceeding
+  when: vpn_config.changed
+  block:
+    - name: Reboot for networking changes
+      shell: "sleep 5 && shutdown -r now 'Networking changes found, rebooting'"
+      async: 1
+      poll: 0
+
+    - name: Wait 1 minute for server to come back online
+      wait_for_connection:
+        delay: 60
+
+- name: copy config to local setup dir
+  fetch:
+    src: /root/SEVPN.setup
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}.setup"
+
+- name: copy sample openvpn config to local setup dir
+  fetch:
+    src: /root/se-vpn.ovpn
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}-sample.openvpn"

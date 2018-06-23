@@ -1,0 +1,30 @@
+---
+# tasks file for dropbear
+
+- name: Install dropbear
+  package:
+    name: dropbear
+    state: present
+
+- name: replace dropbear config
+  template:
+    src: dropbear_run.j2
+    dest: /etc/dropbear/run
+    backup: yes
+    owner: root
+    group: root
+    mode: u+rwx,g=rx,o=rx
+
+- name: replace dropbear default run file
+  template:
+    src: dropbear_def.j2
+    dest: /etc/default/dropbear
+    backup: yes
+    owner: root
+    group: root
+    mode: u+rwx,g=r,o=r
+
+- name: restart dropbear service
+  service:
+    name: dropbear
+    state: restarted

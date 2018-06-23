@@ -1,0 +1,53 @@
+- name: Configuring Base system (updates, swap, sysctl)
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - common
+    - swap
+    - sysctl
+    - unattended-upgrades
+
+- name: Installing dropbear
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - dropbear
+
+- name: Installing DHCP Server
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - isc-dhcp-server
+
+- name: Installing DNS server
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - bind9
+
+- name: Installing HAProxy
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - haproxy
+
+- name: Installing UDP-Gateway
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - badvpn-udpgw
+
+
+- name: Installing SoftEtherVPN from git
+  hosts: vpnservers
+  become: true
+
+  roles:
+    - bridge
+    - softethervpn

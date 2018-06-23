@@ -1,0 +1,14 @@
+network:
+  version: 2
+  renderer: networkd
+  bridges:
+    br0:
+      dhcp4: no
+      addresses: [ 5.5.5.1/24 ]
+      interfaces: [ tap_soft ]
+      parameters:
+        stp: false
+        forward-delay: 0
+  ethernets:
+    tap_soft:
+      dhcp4: no

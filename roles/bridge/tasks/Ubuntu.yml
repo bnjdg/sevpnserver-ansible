@@ -1,0 +1,11 @@
+---
+# OS Specific Tasks:  Ubuntu versions below 17.10
+
+- set_fact:
+    network_interfaces: "{{ lookup('template', 'templates/network_interfaces.j2') }}"
+
+- name: add bridges to /etc/network/interfaces
+  blockinfile:
+    dest: /etc/network/interfaces
+    content: '{{ network_interfaces }}'
+    state: present

@@ -1,0 +1,18 @@
+- name: Installing VPN services
+  hosts: vpnservers
+  become: true
+
+  roles:
+    # - common
+    # - swap
+    # - sysctl
+    # - cf_ddns
+    # - transmission
+    # - dropbear
+    # - isc-dhcp-server
+    # - bind9
+    # - haproxy
+    # - badvpn-udpgw
+    # - bridge
+    # - unattended-upgrades
+    - softethervpn

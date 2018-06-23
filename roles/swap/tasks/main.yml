@@ -1,0 +1,28 @@
+---
+# tasks file for creating swap space
+
+- name: allocate swap file
+  command: fallocate -l 2G /swapfile
+  ignore_errors: yes
+
+- name: change mode for swapfile
+  file:
+    path: /swapfile
+    mode: 0600
+
+- name: make it a swap file
+  command: mkswap /swapfile
+  ignore_errors: yes
+
+- name: turn it on
+  command: swapon /swapfile
+  ignore_errors: yes
+
+- name: Write swap entry in fstab
+  mount: name=none
+         src=/swapfile
+         fstype=swap
+         opts=sw
+         passno=0
+         dump=0
+         state=present

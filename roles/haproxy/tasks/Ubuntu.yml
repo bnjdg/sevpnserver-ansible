@@ -1,0 +1,17 @@
+---
+# OS Specific Tasks:  Ubuntu
+
+- name: install software-properties-common
+  apt:
+    name: software-properties-common
+    state: present
+
+- name: add haproxy repository
+  apt_repository:
+    repo: 'ppa:vbernat/haproxy-1.8'
+
+- name: install haproxy
+  apt:
+    name: haproxy
+    state: latest
+    update_cache: yes

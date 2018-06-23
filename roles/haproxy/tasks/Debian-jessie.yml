@@ -1,0 +1,24 @@
+---
+# OS Specific Tasks:  Debian 8 - Wheezy
+
+- name: enable backports repository
+  apt_repository:
+    repo:  deb http://httpredir.debian.org/debian jessie-backports main
+    state: present
+
+- name: add haproxy gpg key
+  apt_key:
+    url: https://haproxy.debian.net/bernat.debian.org.gpg
+    state: present
+
+- name: add haproxy backports repository
+  apt_repository:
+    repo: deb http://haproxy.debian.net jessie-backports-1.8 main
+    state: present
+
+- name: install haproxy
+  apt:
+    name: haproxy
+    state: latest
+    default_release: jessie-backports
+    update_cache: yes

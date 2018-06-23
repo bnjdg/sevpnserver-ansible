@@ -1,0 +1,173 @@
+---
+# common features for vpn servers
+
+- name: Disable apt translations
+  template:
+    src: 99notranslations.j2
+    dest: /etc/apt/apt.conf.d/99notranslations
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable apt pipelining
+  template:
+    src: 99pipelining.j2
+    dest: /etc/apt/apt.conf.d/99pipelining
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install list of packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - aptitude
+    - sudo
+    - rsync
+
+- name: Upgrade all packages to the latest version
+  apt:
+    name: "*"
+    state: latest
+
+- name: Update all packages to the latest version
+  apt:
+    upgrade: dist
+
+- name: Remove useless packages from the cache
+  apt:
+    autoclean: yes
+
+- name: Remove dependencies that are no longer required
+  apt:
+    autoremove: yes
+
+- name: Install list of packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - net-tools
+    - dnsutils
+    - htop
+    - mosh
+    - tmux
+    - unzip
+    - p7zip-full
+    - p7zip-rar
+    - supervisor
+
+- name: Install pip
+  apt:
+    name: python-pip
+    state: present
+    update_cache: yes
+
+- name: Install pexpect
+  pip:
+    name: pexpect
+    state: present
+
+- name: Ensure a locale exists
+  locale_gen:
+    name: en_PH.UTF-8
+    state: present
+
+- name: Ensure a locale exists
+  locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: set timezone to Asia/Manila
+  timezone:
+    name: Asia/Manila
+
+- name: Install ntp
+  apt:
+    name: ntp
+    state: present
+  tags: ntp
+
+- name: Start the ntp service
+  service:
+    name: ntp
+    state: restarted
+    enabled: yes
+
+- name: Install list of packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - sudo
+    - aptitude
+
+- name: Replace /etc/bash.bashrc
+  template:
+    src: bash.bashrc.j2
+    dest: /etc/bash.bashrc
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+
+- name: Create a login user
+  user:
+    name: admin
+    password: '$6$AGGVHHqIvAKJG$kzjAnmqsrA67UilpxEc6ukThxJPvWyhOr5p3XG7/jRexSjtRabt.nbd3S3JWgtryGdjpfpVaIu57cgxFK9JiW.'
+    # default admin password on servers and workstations
+    groups: # Empty by default, here we give it some groups
+    - sudo
+    state: present
+    shell: /bin/bash       # Defaults to /bin/bash
+    system: no             # Defaults to no
+    createhome: yes        # Defaults to yes
+    home: /home/admin  # Defaults to /home/<username>
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+
+- name: Create a 2048-bit SSH key for user root
+  user:
+    name: root
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+
+- name: Create a 2048-bit SSH key for user root
+  user:
+    name: admin
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+
+- name: Set authorized key for user root copying it from current user
+  authorized_key:
+    user: root
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
+- name: Set authorized key for user root copying it from current user
+  authorized_key:
+    user: admin
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
+- lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: '^benj\s'
+    line: 'benj ALL=(ALL) NOPASSWD: ALL'
+
+- lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: '^Default\s\!requiretty'
+    line: "Default\t!requiretty"
+
+- name: Replace /etc/tmux.conf
+  template:
+    src: tmux.conf.j2
+    dest: /etc/tmux.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644

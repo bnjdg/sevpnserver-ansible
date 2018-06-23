@@ -1,0 +1,33 @@
+---
+# tasks file for isc-dhcp-server
+
+- name: make sure the isc-dhcp-server package is installed
+  package:
+    name: isc-dhcp-server
+    state: present
+
+- name: move the default config file
+  command: mv /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.default
+
+- name: replace dhcp config file
+  template:
+    src: dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+    backup: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: fix /var/lib/dhcp permissions
+  file:
+    path: /var/lib/dhcp
+    state: directory
+    owner: root
+    group: dhcpd
+    recurse: yes
+    mode: 0775
+
+- name: enable the isc-dhcp-server service
+  service:
+    name: isc-dhcp-server
+    enabled: yes

@@ -1,0 +1,34 @@
+---
+# tasks file for bind9 installation
+
+- name: install bind9 packages
+  apt: name={{item}} state=present update_cache=yes
+  with_items:
+    - bind9
+    - bind9utils
+    - bind9-doc
+
+- set_fact:
+    named_conf_local: "{{ lookup('template', 'templates/named.conf.local.j2') }}"
+
+- name: add config to local named
+  blockinfile:
+    dest: /etc/bind/named.conf.local
+    content: '{{ named_conf_local }}'
+    state: present
+
+- name: comment out default named.conf options
+  replace:
+    dest: /etc/bind/named.conf
+    regexp: '^(include)(\\s+)("\\/etc\\/bind\\/named\\.conf\\.options")'
+    replace: '//include "/etc/bind/named.conf.options";'
+
+- name: enable bind9 service
+  service:
+    name: bind9
+    enabled: yes
+
+- name: restart the bind9 service
+  service:
+    name: bind9
+    state: restarted

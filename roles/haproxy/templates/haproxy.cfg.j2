@@ -1,0 +1,110 @@
+global
+    log  127.0.0.1    local1
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+    debug
+
+    # Default SSL material locations
+    ca-base /etc/ssl/certs
+    crt-base /etc/ssl/certs
+
+    # Default ciphers to use on SSL-enabled listening sockets.
+    # For more information, see ciphers(1SSL).
+    ssl-default-bind-ciphers kEECDH+aRSA+AES:kRSA+AES:+AES256:RC4-SHA:!kEDH:!LOW:!EXP:!MD5:!aNULL:!eNULL
+
+defaults
+    log     global
+    option dontlognull           #Disable logging of null connections as these can pollute the logs
+    option redispatch           # Enable session redistribution in case of connection failure, which is important in a HA environment
+    option tcp-smart-accept     # Performance tweak, saving one ACK packet during the accept sequence
+    option tcp-smart-connect    # Performance tweak, saving of one ACK packet during the connect sequence
+
+    # Setting timeouts
+    timeout connect       2m
+    timeout client        2m
+    timeout server        2m
+    retries           5
+
+    timeout http-request     2m    # Slowloris protection
+    timeout tarpit        2m     # tarpit hold time
+    timeout queue         2m
+    backlog        10000
+
+# bare_vpn, ssh, ssh over ssl, vpn over ssl
+frontend ft_https
+    bind :443
+    mode tcp
+    option tcplog
+    tcp-request inspect-delay 5s
+    tcp-request content accept if HTTP
+    tcp-request content accept if { req.ssl_hello_type 1 }
+    tcp-request content accept if { ssl_fc }
+    use_backend bk_ssh if  { payload(0,7) -m bin 5353482d322e30 }
+    use_backend bk_ssh if  { payload(1,7) -m bin 5353482d322e30 }
+
+    acl to_stunnel req_ssl_sni -i m.facebook.com
+    acl to_stunnel req_ssl_sni -i fbcdn.com
+    acl to_stunnel req_ssl_sni -i fbcdn.net
+    acl to_stunnel req_ssl_sni -i fbsbx.com
+    acl to_stunnel req_ssl_sni -i instagram.com
+    acl to_stunnel req_ssl_sni -i viber.com
+    acl to_stunnel req_ssl_sni -i smartnet.ph
+    acl to_stunnel req_ssl_sni -i google.com
+    acl to_stunnel req_ssl_sni -i viber.com
+    use_backend bk_loop_ssl if to_stunnel
+
+    acl to_stunnel_softe req_ssl_sni -i h.facebook.com
+    use_backend bk_loop_softe if to_stunnel_softe
+
+    acl to_stunnel_fb req_ssl_sni -i facebook.com
+    use_backend bk_loop_ssl if to_stunnel_fb
+
+    acl to_vpn req_ssl_sni -i secure.example.com
+    acl to_vpn req_ssl_sni -i vpn.example.com
+    acl to_vpn path_beg -i /vpnsvc/
+    acl to_vpn path_beg -i /vpnsvc
+    acl to_vpn ssl_fc_cipher -i AES-128-CBC
+    acl to_vpn_ssl ssl_fc
+
+    use_backend bk_softe if to_vpn_ssl
+    use_backend bk_softe if to_vpn
+
+    default_backend bk_softe
+
+frontend ssl_ssh
+    bind :10443 ssl crt /etc/haproxy/certs/haproxy.pem accept-proxy
+    mode tcp
+    option tcplog
+    default_backend bk_ssh
+
+frontend ssl_softe
+    bind :11443 ssl crt /etc/haproxy/certs/haproxy.pem accept-proxy
+    mode tcp
+    option tcplog
+    default_backend bk_softe
+
+backend bk_loop_ssl
+    mode tcp
+    server ssl_loop 127.0.0.1:10443 send-proxy
+    option tcpka
+
+backend bk_loop_softe
+    mode tcp
+    server se_loop 127.0.0.1:11443 send-proxy
+    option tcpka
+
+backend bk_ssh
+    mode tcp
+    server ssh 127.0.0.1:22
+    timeout server 15m
+    option tcpka
+
+backend bk_softe
+    mode tcp
+    server softe 127.0.0.1:5555
+    timeout server 5m
+    option tcpka

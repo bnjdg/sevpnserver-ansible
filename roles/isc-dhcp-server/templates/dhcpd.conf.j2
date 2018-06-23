@@ -1,0 +1,10 @@
+default-lease-time 600;
+max-lease-time 7200;
+
+option domain-name "internal.lan";
+
+subnet 5.5.5.0 netmask 255.255.255.0 {
+        range 5.5.5.100 5.5.5.250;
+        option domain-name-servers 5.5.5.1, 1.1.1.1, 1.0.0.1;
+        option routers 5.5.5.1;
+}

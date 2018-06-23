@@ -1,0 +1,10 @@
+auto br0
+iface br0 inet static
+  bridge_ports tap_soft
+  address 5.5.5.1
+  netmask 255.255.255.0
+  bridge_stp off
+  bridge_fd 0
+
+auto tap_soft
+iface tap_soft inet manual

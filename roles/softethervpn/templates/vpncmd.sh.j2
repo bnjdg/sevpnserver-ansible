@@ -1,0 +1,49 @@
+#!/bin/bash
+cd /root/
+touch /root/SEVPN.setup
+FILE=/opt/softethervpn/wordlist.txt
+WORD=$(sort -R $FILE | head -1)
+WORD2=$(sort -R $FILE | head -1)
+vpncmd 127.0.0.1:5555 /server /cmd:ServerCertRegenerate ssh3.cmru.info
+vpncmd 127.0.0.1:5555 /server /cmd:hubdelete DEFAULT
+vpncmd 127.0.0.1:5555 /server /cmd:hubcreate VPN /password:""
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:SetEnumDeny
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserDelete vpn
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn1 /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn2 /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn3 /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn4 /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserCreate vpn5 /group:"" /realname:vpn /note:vpnuser
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserPasswordset vpn1 /password:"vpn1"
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserPasswordset vpn2 /password:"vpn2"
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserPasswordset vpn3 /password:"vpn3"
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserPasswordset vpn4 /password:"vpn4"
+vpncmd 127.0.0.1:5555 /server /hub:VPN /cmd:UserPasswordset vpn5 /password:"vpn5"
+vpncmd 127.0.0.1:5555 /server /cmd:bridgecreate VPN /device:soft /tap:yes
+vpncmd 127.0.0.1:5555 /server /cmd:ListenerList
+vpncmd 127.0.0.1:5555 /server /cmd:ListenerCreate 995
+vpncmd 127.0.0.1:5555 /server /cmd:ListenerDelete 443
+vpncmd 127.0.0.1:5555 /SERVER /CMD:DynamicDnsSetHostname $WORD$WORD2
+vpncmd 127.0.0.1:5555 /SERVER /CMD:DynamicDNSGetStatus | tee -a /root/SEVPN.setup
+WORD4=$(sort -R $FILE | head -1)
+WORD3=$(sort -R $FILE | head -1)
+WORD5=$(sort -R $FILE | head -1)
+SRVPASSWORD=$WORD3$WORD4$WORD5
+vpncmd 127.0.0.1:5555 /SERVER /CMD:OpenVpnMakeConfig openvpn
+unzip openvpn.zip
+vpncmd 127.0.0.1:5555 /Server /cmd:serverpasswordset $SRVPASSWORD
+echo "Your password for SEVPN server admin is: $SRVPASSWORD" | tee -a SEVPN.setup
+myip="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+rm -f *bridge_l2.ovpn
+sed -i '/^\s*[@#]/ d' *.ovpn
+sed -i '/^\s*[@;]/ d' *.ovpn
+sed -i "s/\(vpn[0-9]*\).v4.softether.net/$myip/" *.ovpn
+sed -i 's/udp/tcp/' *.ovpn
+sed -i 's/1194/443/' *.ovp
+sed -i 's/auth-user-pass/auth-user-pass account.txt/' *.ovpn
+sed -i '/^\s*$/d' *.ovpn
+mv *remote*.ovpn se-vpn.ovpn
+rm readme.pdf
+rm readme.txt
+rm openvpn.zip
