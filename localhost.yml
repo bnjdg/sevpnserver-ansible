@@ -1,0 +1,60 @@
+- name: Configuring Base system (updates, swap, sysctl)
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - common
+    - swap
+    - sysctl
+    - unattended-upgrades
+
+- name: Installing dropbear
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - dropbear
+
+- name: Installing DHCP Server
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - isc-dhcp-server
+
+- name: Installing DNS server
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - bind9
+
+- name: Installing HAProxy
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - haproxy
+
+- name: Installing UDP-Gateway
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - badvpn-udpgw
+
+
+- name: Installing SoftEtherVPN from git
+  hosts: localhost
+  connection: local
+  become: true
+
+  roles:
+    - bridge
+    - softethervpn
