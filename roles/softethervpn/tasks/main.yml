@@ -83,6 +83,16 @@
     name: vpnserver
     state: restarted
 
+- name: copy config to local setup dir
+  fetch:
+    src: /root/SEVPN.setup
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}.setup"
+
+- name: copy sample openvpn config to local setup dir
+  fetch:
+    src: /root/se-vpn.ovpn
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}-sample.openvpn"
+
 - name: reboot before proceeding
   when: vpn_config.changed
   block:
@@ -94,13 +104,3 @@
     - name: Wait 1 minute for server to come back online
       wait_for_connection:
         delay: 60
-
-- name: copy config to local setup dir
-  fetch:
-    src: /root/SEVPN.setup
-    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}.setup"
-
-- name: copy sample openvpn config to local setup dir
-  fetch:
-    src: /root/se-vpn.ovpn
-    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}-sample.openvpn"
