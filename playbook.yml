@@ -1,6 +1,12 @@
+- name: Install python-minimal on hosts
+  hosts: vpnservers
+  gather_facts: False
+  raw: apt-get install -y python-minimal python-pip
+
 - name: Configuring Base system (updates, swap, sysctl)
   hosts: vpnservers
   become: true
+  gather_facts: True
 
   roles:
     - common
