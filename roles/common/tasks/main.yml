@@ -113,7 +113,6 @@
   user:
     name: admin
     password: '$6$AGGVHHqIvAKJG$kzjAnmqsrA67UilpxEc6ukThxJPvWyhOr5p3XG7/jRexSjtRabt.nbd3S3JWgtryGdjpfpVaIu57cgxFK9JiW.'
-    # default admin password on servers and workstations
     groups: # Empty by default, here we give it some groups
     - sudo
     state: present
@@ -154,14 +153,8 @@
 - lineinfile:
     path: /etc/sudoers
     state: present
-    regexp: '^benj\s'
-    line: 'benj ALL=(ALL) NOPASSWD: ALL'
-
-- lineinfile:
-    path: /etc/sudoers
-    state: present
-    regexp: '^Default\s\!requiretty'
-    line: "Default\t!requiretty"
+    regexp: '^Defaults\s\!requiretty'
+    line: "Defaults\t!requiretty"
 
 - name: Replace /etc/tmux.conf
   template:
