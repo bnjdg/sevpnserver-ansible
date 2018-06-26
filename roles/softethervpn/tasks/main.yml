@@ -86,12 +86,12 @@
 - name: copy config to local setup dir
   fetch:
     src: /root/SEVPN.setup
-    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}.setup"
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4.address }}.setup"
 
 - name: copy sample openvpn config to local setup dir
   fetch:
     src: /root/se-vpn.ovpn
-    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4 }}-sample.openvpn"
+    dest: "setup/SEVPN-{{ ansible_hostname }}-{{ ansible_default_ipv4.address }}-sample.openvpn"
 
 - name: reboot before proceeding
   when: vpn_config.changed
