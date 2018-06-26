@@ -7,7 +7,6 @@
       raw: apt-get install -y python-minimal python-pip
       ignore_errors: True
 
-
 - name: Configuring Base system (updates, swap, sysctl)
   hosts: vpnservers
   become: true
