@@ -7,7 +7,7 @@
 - name: add bridges to netplan
   blockinfile:
     dest: /etc/netplan/99-netplan_bridges.yaml
-    content: '{{ netplan_bridges }}'
+    content: '{{ netplan_bridge }}'
     state: present
 
 - name: apply netplan
