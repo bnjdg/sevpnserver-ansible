@@ -4,8 +4,8 @@ touch /root/SEVPN.setup
 FILE=/opt/softethervpn/wordlist.txt
 WORD=$(sort -R $FILE | head -1)
 WORD2=$(sort -R $FILE | head -1)
-HOSTNAME="{{ sevpn_hostname }}"
-HOSTNAME="${HOSTNAME:-$WORD$WORD2}"
+SE_HOSTNAME="{{ sevpn_hostname }}"
+SE_HOSTNAME="${SE_HOSTNAME:-$WORD$WORD2}"
 vpncmd 127.0.0.1:5555 /server /cmd:ServerCertRegenerate ssh3.cmru.info
 vpncmd 127.0.0.1:5555 /server /cmd:hubdelete DEFAULT
 vpncmd 127.0.0.1:5555 /server /cmd:hubcreate VPN /password:""
