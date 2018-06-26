@@ -1,7 +1,11 @@
 - name: Install python-minimal on hosts
   hosts: vpnservers
   gather_facts: False
-  raw: apt-get install -y python-minimal python-pip
+  remote_user: root
+  tasks:
+    - name: install python first
+      raw: apt-get install -y python-minimal python-pip
+
 
 - name: Configuring Base system (updates, swap, sysctl)
   hosts: vpnservers
