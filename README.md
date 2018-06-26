@@ -7,6 +7,16 @@ This is an [Ansible](https://www.ansible.com/) Playbook that installs [SoftEther
   - BADVPN-UDP Gateway -  for use with HTTP Injector's UDP tunneling
   - DROPBEAR - for SSH with payload
 
+## Install locally
+
+```shell
+# wget -qO- https://git.io/f4Qps | bash
+```
+
+```shell
+# curl https://git.io/f4Qps | bash
+```
+
 ### Default configuration
     - No IPTABLES script is provided, secure your server on your own risk
     - Port 443 is bound to haproxy
