@@ -5,6 +5,7 @@
   tasks:
     - name: install python first
       raw: apt-get install -y python-minimal python-pip
+      ignore_errors: True
 
 
 - name: Configuring Base system (updates, swap, sysctl)
