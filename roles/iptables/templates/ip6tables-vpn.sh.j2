@@ -1,0 +1,108 @@
+#!/bin/bash
+DEF_IF=$(route | grep '^default' | grep -o '[^ ]*$')
+ip6tables -P INPUT ACCEPT
+ip6tables -P OUTPUT ACCEPT
+ip6tables -P FORWARD ACCEPT
+ip6tables -X
+ip6tables -F
+
+ip6tables -A INPUT -i lo -j ACCEPT
+ip6tables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A INPUT -m conntrack --ctstate INVALID -j DROP
+ip6tables -A INPUT -s ::1/128 ! -i lo -j DROP
+
+ip6tables -N SSHBRUTE
+ip6tables -A SSHBRUTE -m recent --set
+ip6tables -A SSHBRUTE -m recent --update --seconds 300 --hitcount 10 -m limit --limit 1/second --limit-burst 100 -j LOG --log-prefix "iptables[SSH-brute]: "
+ip6tables -A SSHBRUTE -m recent --update --seconds 300 --hitcount 10 -j DROP
+ip6tables -A SSHBRUTE -j ACCEPT
+
+ip6tables -N ICMPFLOOD
+ip6tables -A ICMPFLOOD -m recent --set --rsource
+ip6tables -A ICMPFLOOD -m recent --update --seconds 1 --hitcount 6 --rsource --rttl -m limit --limit 1/sec --limit-burst 1 -j LOG --log-prefix "ip6tables[ICMP-flood]: "
+ip6tables -A ICMPFLOOD -m recent --update --seconds 1 --hitcount 6 --rsource --rttl -j DROP
+ip6tables -A ICMPFLOOD -j ACCEPT
+
+ip6tables -A INPUT -p tcp --dport 22 --syn -m conntrack --ctstate NEW -j SSHBRUTE
+ip6tables -A INPUT -p tcp --dport 2222 --syn -m conntrack --ctstate NEW -j SSHBRUTE
+ip6tables -A INPUT -p tcp --dport 2224 --syn -m conntrack --ctstate NEW -j SSHBRUTE
+
+# Permit needed ICMP packet types for IPv6 per RFC 4890.
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 1   -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 2   -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 3   -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 4   -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 133 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 134 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 135 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 136 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 137 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 141 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 142 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 130 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 131 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 132 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 143 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 148 -j ACCEPT
+ip6tables -A INPUT              -p ipv6-icmp --icmpv6-type 149 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 151 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 152 -j ACCEPT
+ip6tables -A INPUT -s fe80::/10 -p ipv6-icmp --icmpv6-type 153 -j ACCEPT
+
+# Permit IMCP echo requests (ping) and use ICMPFLOOD chain for preventing ping
+# flooding.
+ip6tables -A INPUT -p ipv6-icmp --icmpv6-type 128 -j ICMPFLOOD
+ip6tables -A INPUT -p udp -m multiport --dports 135,445 -j DROP
+ip6tables -A INPUT -p udp --dport 137:139 -j DROP
+ip6tables -A INPUT -p udp --sport 137 --dport 1024:65535 -j DROP
+ip6tables -A INPUT -p tcp -m multiport --dports 135,139,445 -j DROP
+ip6tables -A INPUT -p udp --dport 1900 -j DROP
+ip6tables -A INPUT -p tcp --dport 113 --syn -m conntrack --ctstate NEW -j REJECT --reject-with tcp-reset
+ip6tables -A INPUT -m limit --limit 1/second --limit-burst 100 -j LOG --log-prefix "ip6tables[DOS]: "
+
+#Allowed ports
+ip6tables -A INPUT -p tcp -m multiport --dports 80,443,9091 --syn -m conntrack --ctstate NEW -j ACCEPT
+ip6tables -A INPUT -p tcp -m multiport --dports 22,2222,2224 --syn -m conntrack --ctstate NEW -j ACCEPT
+ip6tables -A INPUT -p tcp -m multiport --dports 3128,8080,8888,8000 --syn -m conntrack --ctstate NEW -j ACCEPT
+ip6tables -A INPUT -p tcp -m multiport --dports 995,1194,5555 --syn -m conntrack --ctstate NEW -j ACCEPT
+ip6tables -A INPUT -p tcp -m multiport --dports 25550:25570 --syn -m conntrack --ctstate NEW -j ACCEPT
+ip6tables -A INPUT -p udp -m multiport --dports 60000:61000 -j ACCEPT
+ip6tables -A INPUT -p tcp -m multiport --dports 60000:61000 -j ACCEPT
+ip6tables -A INPUT -p udp -m multiport --dports 1194:1200 -j ACCEPT
+
+# Redirect port 21 to local port 2121
+#ip6tables -A PREROUTING -i eth0 -p tcp --dport 21 -j REDIRECT --to-port 2121
+
+# Forward port 8080 to port 80 on host 192.168.1.10
+#ip6tables -A PREROUTING -i eth0 -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.10:80
+
+ip6tables -A INPUT -i tun+ -j ACCEPT
+ip6tables -A OUTPUT -o tun+ -j ACCEPT
+ip6tables -A FORWARD -i tun+ -j ACCEPT
+ip6tables -A FORWARD -i tun+ -o $DEF_IF -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A FORWARD -i $DEF_IF -o tun+ -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A FORWARD -i tun+ -o ens0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A FORWARD -i ens0 -o tun+ -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+#allow tap_soft
+ip6tables -A INPUT -i tap_soft -j ACCEPT
+ip6tables -A OUTPUT -o tap_soft -j ACCEPT
+ip6tables -A FORWARD -i tap_soft -j ACCEPT
+ip6tables -A FORWARD -i tap_soft -o $DEF_IF -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A FORWARD -i $DEF_IF -o tap_soft -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+#allow br0
+ip6tables -A INPUT -i br0 -j ACCEPT
+ip6tables -A OUTPUT -o br0 -j ACCEPT
+ip6tables -A FORWARD -i br0 -j ACCEPT
+ip6tables -A FORWARD -i br0 -o $DEF_IF -m state --state RELATED,ESTABLISHED -j ACCEPT
+ip6tables -A FORWARD -i $DEF_IF -o br0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+iptables -t nat -A POSTROUTING -o $DEF_IF -j MASQUERADE
+
+ip6tables -P INPUT DROP
+ip6tables -P FORWARD DROP
+ip6tables -P OUTPUT ACCEPT
+
+#save rules
+ip6tables-save > /etc/iptables/rules.v6

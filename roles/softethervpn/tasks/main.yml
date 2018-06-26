@@ -104,3 +104,12 @@
     - name: Wait 1 minute for server to come back online
       wait_for_connection:
         delay: 60
+
+- debug:
+    msg: "done installing SE-VPN!"
+
+- debug:
+    msg: "SE-VPN server details at /root/SEVPN.setup or playbookdir/setup/*.setup"
+
+- debug:
+    msg: "SE-VPN sample openvpn config at /root/se-vpn.ovpn or playbookdir/setup/*.ovpn"

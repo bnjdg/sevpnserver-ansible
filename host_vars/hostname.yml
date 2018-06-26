@@ -1,0 +1,4 @@
+---
+# define SoftEther DNS for each host
+
+sevpn_hostname: null

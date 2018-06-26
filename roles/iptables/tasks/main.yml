@@ -1,0 +1,31 @@
+---
+# IPTables management
+
+- name: install the iptables-persistent package
+  package:
+    name: iptables-persistent
+    state: present
+
+- name: copy configuration script
+  template:
+    src: iptables-vpn.sh.j2
+    dest: /root/iptables-vpn.sh
+    backup: yes
+    owner: root
+    group: root
+    mode: 0755
+
+- name: copy configuration script
+  template:
+    src: ip6tables-vpn.sh.j2
+    dest: /root/ip6tables-vpn.sh
+    backup: yes
+    owner: root
+    group: root
+    mode: 0755
+
+- name: run configuration script
+  shell: bash /root/iptables-vpn.sh
+
+- name: run configuration script
+  shell: bash /root/ip6tables-vpn.sh

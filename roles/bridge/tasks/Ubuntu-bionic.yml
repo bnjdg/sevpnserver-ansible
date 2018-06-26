@@ -2,11 +2,11 @@
 # OS Specific Tasks:  Ubuntu 18.04
 
 - set_fact:
-    netplan_bridge: "{{ lookup('template', 'templates/netplan_bridges.j2') }}"
+    netplan_bridge: "{{ lookup('template', 'templates/netplan_bridges.yaml.j2') }}"
 
 - name: add bridges to netplan
   blockinfile:
-    dest: /etc/netplan/99-netplan_bridges.yaml
+    dest: /etc/netplan/99-bridges.yaml
     content: '{{ netplan_bridges }}'
     state: present
 

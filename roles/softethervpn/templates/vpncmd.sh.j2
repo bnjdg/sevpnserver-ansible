@@ -4,6 +4,8 @@ touch /root/SEVPN.setup
 FILE=/opt/softethervpn/wordlist.txt
 WORD=$(sort -R $FILE | head -1)
 WORD2=$(sort -R $FILE | head -1)
+HOSTNAME="{{ sevpn_hostname }}"
+HOSTNAME="${HOSTNAME:-$WORD$WORD2}"
 vpncmd 127.0.0.1:5555 /server /cmd:ServerCertRegenerate ssh3.cmru.info
 vpncmd 127.0.0.1:5555 /server /cmd:hubdelete DEFAULT
 vpncmd 127.0.0.1:5555 /server /cmd:hubcreate VPN /password:""
@@ -24,12 +26,14 @@ vpncmd 127.0.0.1:5555 /server /cmd:bridgecreate VPN /device:soft /tap:yes
 vpncmd 127.0.0.1:5555 /server /cmd:ListenerList
 vpncmd 127.0.0.1:5555 /server /cmd:ListenerCreate 995
 vpncmd 127.0.0.1:5555 /server /cmd:ListenerDelete 443
-vpncmd 127.0.0.1:5555 /SERVER /CMD:DynamicDnsSetHostname $WORD$WORD2
+vpncmd 127.0.0.1:5555 /SERVER /CMD:DynamicDnsSetHostname $SE_HOSTNAME
 vpncmd 127.0.0.1:5555 /SERVER /CMD:DynamicDNSGetStatus | tee -a /root/SEVPN.setup
 WORD4=$(sort -R $FILE | head -1)
 WORD3=$(sort -R $FILE | head -1)
 WORD5=$(sort -R $FILE | head -1)
-SRVPASSWORD=$WORD3$WORD4$WORD5
+#VAR1="${VAR1:-default value}"
+SRVPASSWORD="{{ sevpn_password }}"
+SRVPASSWORD="${SRVPASSWORD:-$WORD3$WORD4$WORD5}"
 vpncmd 127.0.0.1:5555 /SERVER /CMD:OpenVpnMakeConfig openvpn
 unzip openvpn.zip
 vpncmd 127.0.0.1:5555 /Server /cmd:serverpasswordset $SRVPASSWORD
